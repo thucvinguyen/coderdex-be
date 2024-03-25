@@ -1,6 +1,7 @@
 const fs = require("fs");
 const csv = require("csvtojson");
 const path = require("path");
+const { faker } = require("@faker-js/faker");
 
 const createPokemon = async () => {
   let pokemonData = await csv().fromFile("pokemon.csv");
@@ -28,6 +29,11 @@ const createPokemon = async () => {
   pokemonData.forEach((item, index) => {
     item.id = index + 1;
     item.name = item.Name;
+    item.weight = faker.number.int({ min: 10, max: 1000 });
+    item.height = faker.number.int({ min: 10, max: 1000 });
+    item.category = faker.animal.type();
+    item.abilities = faker.person.zodiacSign();
+    item.description = faker.lorem.sentence();
     if (item.Type2) {
       item.types = [item.Type1.toLowerCase(), item.Type2.toLowerCase()];
     } else {

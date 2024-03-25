@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const fs = require("fs");
+const { faker } = require("@faker-js/faker");
 
 const allowedFilter = ["search", "type", "page", "limit"];
 
@@ -73,7 +74,6 @@ router.get("/:id", (req, res, next) => {
         } else {
           const currentPokemon = pokemon[index];
 
-          // Calculate previous and next indices
           const prevIndex = (index - 1 + pokemon.length) % pokemon.length;
           const nextIndex = (index + 1) % pokemon.length;
 
@@ -91,13 +91,101 @@ router.get("/:id", (req, res, next) => {
           );
         }
       } catch (error) {
-        next(error); // Forward parsing error to error handler
+        next(error);
       }
     });
   } catch (error) {
-    next(error); // Forward synchronous errors to error handler
+    next(error);
   }
 });
 // API for creating new Pokémon
+
+router.post("/", (req, res, next) => {
+  const pokemonTypes = [
+    "bug",
+    "dragon",
+    "fairy",
+    "fire",
+    "ghost",
+    "ground",
+    "normal",
+    "psychic",
+    "steel",
+    "dark",
+    "electric",
+    "fighting",
+    "flying",
+    "grass",
+    "ice",
+    "poison",
+    "rock",
+    "water",
+  ];
+
+  try {
+    let db = fs.readFileSync("pokemon.json", "utf-8");
+    db = JSON.parse(db);
+
+    const { name, types } = req.body;
+    // const id = db.totalPokemons + 1; // Generate new ID based on totalPokemons count
+
+    if (!name || !types || types.length === 0) {
+      const exception = new Error(`Missing body info`);
+      exception.statusCode = 400;
+      throw exception;
+    }
+
+    if (types.length > 2) {
+      const exception = new Error("Pokémon can only have one or two types");
+      exception.statusCode = 400;
+      throw exception;
+    }
+
+    types.forEach((type) => {
+      if (!pokemonTypes.includes(type)) {
+        const exception = new Error(`Type ${type} is not allowed`);
+        exception.statusCode = 400;
+        throw exception;
+      }
+    });
+
+    // Check if the Pokémon already exists with the same name
+    db.data.forEach((existingPokemon) => {
+      if (existingPokemon.name === name) {
+        const exception = new Error("The Pokémon already exists");
+        exception.statusCode = 400;
+        throw exception;
+      }
+    });
+
+    // Generate new ID and update totalPokemons count
+    const id = db.totalPokemon + 1;
+    db.totalPokemon++;
+
+    // Create new Pokémon object
+    const newPokemon = {
+      id,
+      name,
+      types,
+      url: faker.image.urlLoremFlickr(),
+      weight: faker.number.int({ min: 10, max: 1000 }),
+      height: faker.number.int({ min: 10, max: 1000 }),
+      category: faker.animal.type(),
+      abilities: faker.lorem.words(),
+      description: faker.lorem.sentence(),
+    };
+
+    // Add new Pokémon to the database
+    db.pokemon.push(newPokemon);
+
+    // Write updated database back to file
+    fs.writeFileSync("pokemon.json", JSON.stringify(db));
+
+    // Send response
+    res.status(201).json(newPokemon);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
