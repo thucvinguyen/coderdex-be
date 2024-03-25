@@ -28,8 +28,8 @@ app.use((req, res, next) => {
 });
 
 //customize express error handling middleware
-app.use((err, req, res, next) => {
-  res.status(err.statusCode).send(err.message);
-});
+// app.use((err, req, res, next) => {
+//   res.status(err.statusCode).send(err.message);
+// });
 
 module.exports = app;
