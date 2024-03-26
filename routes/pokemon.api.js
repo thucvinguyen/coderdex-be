@@ -99,7 +99,6 @@ router.get("/:id", (req, res, next) => {
   }
 });
 // API for creating new Pokémon
-
 router.post("/", (req, res, next) => {
   const pokemonTypes = [
     "bug",
@@ -126,11 +125,10 @@ router.post("/", (req, res, next) => {
     let db = fs.readFileSync("pokemon.json", "utf-8");
     db = JSON.parse(db);
 
-    const { name, types } = req.body;
-    // const id = db.totalPokemons + 1; // Generate new ID based on totalPokemons count
+    const { name, id, url, types } = req.body;
 
-    if (!name || !types || types.length === 0) {
-      const exception = new Error(`Missing body info`);
+    if (!name || !id || !url || !types || types.length === 0) {
+      const exception = new Error("Missing required information");
       exception.statusCode = 400;
       throw exception;
     }
@@ -143,36 +141,38 @@ router.post("/", (req, res, next) => {
 
     types.forEach((type) => {
       if (!pokemonTypes.includes(type)) {
-        const exception = new Error(`Type ${type} is not allowed`);
+        const exception = new Error(`Type "${type}" is not allowed`);
         exception.statusCode = 400;
         throw exception;
       }
     });
 
-    // Check if the Pokémon already exists with the same name
-    db.pokemon.forEach((existingPokemon) => {
-      if (existingPokemon.name === name) {
-        const exception = new Error("The Pokémon already exists");
-        exception.statusCode = 400;
-        throw exception;
-      }
-    });
+    // Check if the Pokémon already exists with the same name or ID
+    const existingPokemon = db.pokemon.find(
+      (pokemon) => pokemon.name === name || pokemon.id === parseInt(id)
+    );
+    if (existingPokemon) {
+      const exception = new Error(
+        "A Pokémon with the same name or ID already exists"
+      );
+      exception.statusCode = 400;
+      throw exception;
+    }
 
-    // Generate new ID and update totalPokemons count
-    const id = db.totalPokemon + 1;
-    db.totalPokemon++;
+    // Generate new ID based on the length of existing Pokémon array
+    const newId = db.pokemon.length + 1;
 
     // Create new Pokémon object
     const newPokemon = {
-      id,
+      id: newId,
       name,
       types,
-      url: faker.image.urlLoremFlickr(),
+      url, // Use the provided URL
       weight: faker.number.int({ min: 10, max: 1000 }),
       height: faker.number.int({ min: 10, max: 1000 }),
       category: faker.animal.type(),
       abilities: faker.lorem.words(),
-      description: faker.lorem.sentence(),
+      description: faker.lorem.sentence(), // Generate a random sentence for description
     };
 
     // Add new Pokémon to the database
