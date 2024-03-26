@@ -83,9 +83,9 @@ router.get("/:id", (req, res, next) => {
           res.status(200).send(
             JSON.stringify({
               data: {
-                current: currentPokemon,
-                previous: prevPokemon,
-                next: nextPokemon,
+                pokemon: currentPokemon,
+                previousPokemon: prevPokemon,
+                nextPokemon: nextPokemon,
               },
             })
           );
@@ -150,7 +150,7 @@ router.post("/", (req, res, next) => {
     });
 
     // Check if the Pokémon already exists with the same name
-    db.data.forEach((existingPokemon) => {
+    db.pokemon.forEach((existingPokemon) => {
       if (existingPokemon.name === name) {
         const exception = new Error("The Pokémon already exists");
         exception.statusCode = 400;
@@ -183,6 +183,87 @@ router.post("/", (req, res, next) => {
 
     // Send response
     res.status(201).json(newPokemon);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// API for updating a Pokémon
+router.put("/:id", (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      types,
+      url,
+      weight,
+      height,
+      category,
+      abilities,
+      description,
+    } = req.body;
+
+    let data = fs.readFileSync("pokemon.json", "utf-8");
+    let db = JSON.parse(data);
+
+    const indexToUpdate = db.pokemon.findIndex(
+      (pokemon) => pokemon.id === parseInt(id)
+    );
+
+    if (indexToUpdate === -1) {
+      const error = new Error(`Pokemon not found`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    db.pokemon[indexToUpdate] = {
+      id,
+      name,
+      types,
+      url,
+      weight,
+      height,
+      category,
+      abilities,
+      description,
+    };
+
+    fs.writeFileSync("pokemon.json", JSON.stringify(db));
+
+    res.status(200).json({
+      message: "Pokemon updated successfully",
+      updatedPokemon: db.pokemon[indexToUpdate],
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// API for deleting a Pokémon by Id
+router.delete("/:id", (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    let data = fs.readFileSync("pokemon.json", "utf-8");
+    let db = JSON.parse(data);
+
+    const indexToDelete = db.pokemon.findIndex(
+      (pokemon) => pokemon.id === parseInt(id)
+    );
+
+    if (indexToDelete === -1) {
+      const exception = new Error(`Pokemon not found`);
+      exception.statusCode = 404;
+      throw exception;
+    }
+
+    db.pokemon.splice(indexToDelete, 1);
+
+    db.totalPokemon--;
+
+    fs.writeFileSync("pokemon.json", JSON.stringify(db));
+
+    res.status(200).json({ message: "Pokemon deleted successfully" });
   } catch (error) {
     next(error);
   }
